@@ -1,0 +1,63 @@
+/**
+ * UC port of the exercise of the Interrupts lab (InterruptModalSolution.lf).
+ *
+ * Count up on the display until button A is pushed, then count down at half the rate. 
+ * Each push of button A toggles the direction. Timers declared inside a mode only 
+ * run while the mode is active.
+ *
+ * Keys: button A ('a') is pushed at the times scheduled at startup.
+ */
+import Display from "lib/Display.ulf"
+
+@platform("native")
+@timeout(8 s)
+main reactor {
+  display = new Display()
+  counter = new Counter()
+  counter.text -> display.line0
+
+  @max_pending_events(2)
+  logical action key: int
+
+  reaction(startup) -> key {=
+    lf_schedule(key, MSEC(1700), 'a');
+    lf_schedule(key, MSEC(4300), 'a');
+  =}
+
+  reaction(key) -> counter.button {=
+    lf_set(counter.button, key->value);
+  =}
+}
+
+reactor Counter {
+  input button: int
+  output text: {= const char* =}
+
+  state count: int = 0
+
+  initial mode UP {
+    timer up_tick(0, 500 msec)
+    reaction(up_tick) -> text {=
+      self->count++;
+      static char line[32];
+      snprintf(line, sizeof(line), "UP   %d", self->count);
+      lf_set(text, line);
+    =}
+    reaction(button) -> reset(DOWN) {=
+      if (button->value == 'a') lf_set_mode(DOWN);
+    =}
+  }
+
+  mode DOWN {
+    timer down_tick(0, 1 sec)
+    reaction(down_tick) -> text {=
+      self->count--;
+      static char line[32];
+      snprintf(line, sizeof(line), "DOWN %d", self->count);
+      lf_set(text, line);
+    =}
+    reaction(button) -> reset(UP) {=
+      if (button->value == 'a') lf_set_mode(UP);
+    =}
+  }
+}

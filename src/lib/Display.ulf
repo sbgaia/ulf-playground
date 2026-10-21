@@ -1,0 +1,17 @@
+/** Mock of a display: prints the lines it receives, prefixed by the logical time. */
+preamble {=
+  #include <stdio.h>
+=}
+
+reactor Display {
+  input line0: {= const char* =}
+  input line1: {= const char* =}
+
+  reaction(line0, line1) {=
+    printf("%7.3f s |", env->get_elapsed_logical_time(env) / 1e9);
+    if (lf_is_present(line0)) printf(" %s", line0->value);
+    if (lf_is_present(line1)) printf(" %s", line1->value);
+    printf("\n");
+    fflush(stdout);
+  =}
+}
