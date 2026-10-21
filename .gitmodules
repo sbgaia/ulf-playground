@@ -1,0 +1,3 @@
+[submodule "reactor-uc"]
+	path = reactor-uc
+	url = https://github.com/lf-lang/reactor-uc.git
