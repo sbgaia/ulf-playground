@@ -1,0 +1,49 @@
+/**
+ * The turnstile is LOCKED until a coin is inserted. It is then UNLOCKED until someone pushes
+ * through it, and LOCKED again. A LOCKED turnstile refuses a push, and an UNLOCKED one gives a
+ * coin back. Only the reactions of the active mode run.
+ *
+ * Keys: 'c' inserts a coin and 'p' pushes, at the times scheduled at startup.
+ */
+import Display from "lib/Display.ulf"
+
+@platform("native")
+@timeout(8 s)
+main reactor {
+  display = new Display()
+
+  @max_pending_events(8)
+  logical action key: int
+
+  reaction(startup) -> key {=
+    lf_schedule(key, SEC(1), 'p');
+    lf_schedule(key, SEC(2), 'c');
+    lf_schedule(key, SEC(3), 'c');
+    lf_schedule(key, SEC(4), 'p');
+    lf_schedule(key, SEC(5), 'p');
+    lf_schedule(key, SEC(6), 'c');
+    lf_schedule(key, SEC(7), 'p');
+  =}
+
+  initial mode LOCKED {
+    reaction(key) -> reset(UNLOCKED), display.line0 {=
+      if (key->value == 'c') {
+        lf_set(display.line0, "UNLOCKED  coin accepted, you may pass");
+        lf_set_mode(UNLOCKED);
+      } else if (key->value == 'p') {
+        lf_set(display.line0, "LOCKED    insert a coin first");
+      }
+    =}
+  }
+
+  mode UNLOCKED {
+    reaction(key) -> reset(LOCKED), display.line0 {=
+      if (key->value == 'p') {
+        lf_set(display.line0, "LOCKED    welcome on board");
+        lf_set_mode(LOCKED);
+      } else if (key->value == 'c') {
+        lf_set(display.line0, "UNLOCKED  already paid, coin returned");
+      }
+    =}
+  }
+}

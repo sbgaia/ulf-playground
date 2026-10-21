@@ -1,0 +1,62 @@
+/**
+ * The thermostat of Lee & Seshia, "Introduction to Embedded Systems", Chapter 3.
+ *
+ * A thermostat with hysteresis keeps a room between 18 and 22 degrees. In mode IDLE the heater is
+ * off and the room cools down. Below 18 degrees the thermostat switches to mode HEATING, which turns
+ * the heater on until the room is warmer than 22 degrees. The gap between the two thresholds keeps
+ * the heater from switching on and off all the time.
+ *
+ * Mock: a Room reactor simulates the temperature sensor.
+ */
+import Display from "lib/Display.ulf"
+
+reactor Room(start: float = 20) {
+  input heater: bool
+  output temperature: float
+
+  timer tick(0, 1 sec)
+  state temp: float = start
+  state heating: bool = false
+
+  reaction(tick) -> temperature {=
+    self->temp += self->heating ? 0.5f : -0.3f;
+    lf_set(temperature, self->temp);
+  =}
+
+  reaction(heater) {=
+    self->heating = heater->value;
+  =}
+}
+
+@platform("native")
+@timeout(30 s)
+main reactor {
+  room = new Room()
+  display = new Display()
+
+  reaction(room.temperature) -> display.line1 {=
+    static char text[32];
+    snprintf(text, sizeof(text), "%.1f C", room.temperature->value);
+    lf_set(display.line1, text);
+  =}
+
+  initial mode IDLE {
+    reaction(room.temperature) -> reset(HEATING), room.heater, display.line0 {=
+      if (room.temperature->value < 18.0f) {
+        lf_set(room.heater, true);
+        lf_set(display.line0, "HEATING");
+        lf_set_mode(HEATING);
+      }
+    =}
+  }
+
+  mode HEATING {
+    reaction(room.temperature) -> reset(IDLE), room.heater, display.line0 {=
+      if (room.temperature->value > 22.0f) {
+        lf_set(room.heater, false);
+        lf_set(display.line0, "IDLE");
+        lf_set_mode(IDLE);
+      }
+    =}
+  }
+}

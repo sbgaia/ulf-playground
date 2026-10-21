@@ -1,0 +1,72 @@
+/**
+ * The difference between entering a mode with `reset` and with `history`.
+ *
+ * A music box plays a melody. 'p' pauses it. Then 'c' continues the melody where it was paused,
+ * and 'r' restarts it from the beginning.
+ *
+ * The melody is played by a Melody reactor that lives inside the PLAYING mode. Continuing is a
+ * history transition: the Melody resumes with its state as it was. Restarting is a reset
+ * transition: its `reset state` goes back to its initial value and its timer starts over.
+ *
+ * Keys: 'p', 'c' and 'r' are pressed at the times scheduled at startup.
+ */
+import Display from "lib/Display.ulf"
+
+reactor Melody {
+  output note: {= const char* =}
+
+  timer beat(0, 500 msec)
+  reset state next: int = 0  // Index of the next note.
+
+  reaction(beat) -> note {=
+    static const char* song[] = {
+      "C  Twin-", "C  kle",  "G  twin-", "G  kle",  "A  lit-", "A  tle", "G  star,",
+      "F  how",   "F  I",    "E  won-",  "E  der",  "D  what", "D  you", "C  are!"};
+    lf_set(note, song[self->next]);
+    self->next = (self->next + 1) % 14;
+  =}
+}
+
+@platform("native")
+@timeout(9 s)
+main reactor {
+  display = new Display()
+
+  @max_pending_events(4)
+  logical action key: int
+
+  reaction(startup) -> key {=
+    lf_schedule(key, MSEC(1200), 'p');
+    lf_schedule(key, MSEC(2700), 'c');
+    lf_schedule(key, SEC(4), 'p');
+    lf_schedule(key, SEC(5), 'r');
+  =}
+
+  initial mode PLAYING {
+    melody = new Melody()
+    melody.note -> display.line0
+
+    reaction(key) -> reset(PAUSED), display.line1 {=
+      if (key->value == 'p') {
+        lf_set(display.line1, "[paused]");
+        lf_set_mode(PAUSED);
+      }
+    =}
+  }
+
+  mode PAUSED {
+    reaction(key) -> history(PLAYING), display.line1 {=
+      if (key->value == 'c') {
+        lf_set(display.line1, "[continue]");
+        lf_set_mode(PLAYING);
+      }
+    =}
+
+    reaction(key) -> reset(PLAYING), display.line1 {=
+      if (key->value == 'r') {
+        lf_set(display.line1, "[restart]");
+        lf_set_mode(PLAYING);
+      }
+    =}
+  }
+}

@@ -1,0 +1,54 @@
+/**
+ * A traffic light with a pedestrian button.
+ *
+ * The light stays GREEN until a pedestrian pushes the button. It then turns YELLOW for 2 seconds
+ * and RED for 5 seconds, during which pedestrians may cross, and then GREEN again.
+ *
+ * Timers declared inside a mode only run while the mode is active, and they restart every time the
+ * mode is entered with a reset transition. Here they measure how long YELLOW and RED last.
+ *
+ * Keys: the pedestrian button ('p') is pushed at the times scheduled at startup.
+ */
+import Display from "lib/Display.ulf"
+
+@platform("native")
+@timeout(20 s)
+main reactor {
+  display = new Display()
+
+  @max_pending_events(2)
+  logical action key: int
+
+  reaction(startup) -> key, display.line0 {=
+    lf_set(display.line0, "GREEN   cars go, pedestrians wait");
+    lf_schedule(key, MSEC(500), 'p');
+    lf_schedule(key, SEC(9), 'p');
+  =}
+
+  initial mode GREEN {
+    reaction(key) -> reset(YELLOW), display.line0 {=
+      if (key->value == 'p') {
+        lf_set(display.line0, "YELLOW  cars slow down");
+        lf_set_mode(YELLOW);
+      }
+    =}
+  }
+
+  mode YELLOW {
+    timer yellow_over(2 sec)
+
+    reaction(yellow_over) -> reset(RED), display.line0 {=
+      lf_set(display.line0, "RED     cars stop, pedestrians cross");
+      lf_set_mode(RED);
+    =}
+  }
+
+  mode RED {
+    timer red_over(5 sec)
+
+    reaction(red_over) -> reset(GREEN), display.line0 {=
+      lf_set(display.line0, "GREEN   cars go, pedestrians wait");
+      lf_set_mode(GREEN);
+    =}
+  }
+}

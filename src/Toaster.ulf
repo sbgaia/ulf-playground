@@ -1,0 +1,57 @@
+/**
+ * What happens to the pending events of a mode that is left.
+ *
+ * Pushing the lever down starts mode TOASTING: the heater turns on, and a logical action `done` is
+ * scheduled to pop the toast up 4 seconds later. The cancel button goes back to mode IDLE earlier.
+ *
+ * The action `done` belongs to mode TOASTING. When TOASTING is left, a pending `done` is not lost,
+ * but put on hold until TOASTING is entered again. A reset transition then discards it, so that a
+ * new toast always gets its full 4 seconds and the old `done` does not pop it up halfway. (A
+ * history transition would instead deliver it after the time that was left.)
+ *
+ * Keys: 'd' pushes the lever down and 'c' cancels, at the times scheduled at startup.
+ */
+import Display from "lib/Display.ulf"
+
+@platform("native")
+@timeout(16 s)
+main reactor {
+  display = new Display()
+
+  @max_pending_events(4)
+  logical action key: int
+
+  reaction(startup) -> key {=
+    lf_schedule(key, SEC(1), 'd');
+    lf_schedule(key, SEC(7), 'd');
+    lf_schedule(key, SEC(9), 'c');
+    lf_schedule(key, SEC(10), 'd');
+  =}
+
+  initial mode IDLE {
+    reaction(key) -> reset(TOASTING) {=
+      if (key->value == 'd') lf_set_mode(TOASTING);
+    =}
+  }
+
+  mode TOASTING {
+    logical action done
+
+    reaction(reset) -> done, display.line0 {=
+      lf_set(display.line0, "TOASTING  heater on");
+      lf_schedule(done, SEC(4));
+    =}
+
+    reaction(done) -> reset(IDLE), display.line0 {=
+      lf_set(display.line0, "IDLE      heater off, the toast pops up");
+      lf_set_mode(IDLE);
+    =}
+
+    reaction(key) -> reset(IDLE), display.line0 {=
+      if (key->value == 'c') {
+        lf_set(display.line0, "IDLE      heater off, cancelled");
+        lf_set_mode(IDLE);
+      }
+    =}
+  }
+}

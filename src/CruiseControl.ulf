@@ -1,0 +1,125 @@
+/**
+ * Each mode wires the reactors in its own way.
+ *
+ * The throttle of a car is driven either by the gas pedal (mode MANUAL) or by the cruise control
+ * (mode CRUISE), which holds the car at 100 km/h. Each mode has its own connection to the input
+ * car.throttle, and only the connection of the active mode carries values: switching modes
+ * rewires the car. Pedal and Cruise never know which one of them is in charge.
+ *
+ * Keys: 'w' pushes the pedal further down, 'c' switches the cruise control on and 'x' off, at the
+ * times scheduled at startup.
+ */
+import Display from "lib/Display.ulf"
+
+// The car: its engine pushes and the air slows it down. At a constant throttle, its speed settles
+// at 200 km/h times the throttle.
+reactor Car {
+  input throttle: float  // From 0 (idle) to 1 (full).
+  output speed: float    // km/h
+
+  timer tick(0, 100 msec)
+  state power: float = 0
+  state v: float = 0
+
+  reaction(tick) -> speed {=
+    self->v += 0.1f * (80 * self->power - 0.4f * self->v);
+    lf_set(speed, self->v);
+  =}
+
+  reaction(throttle) {=
+    self->power = throttle->value;
+  =}
+}
+
+// The gas pedal. Its position is sent to the car 10 times per second.
+reactor Pedal {
+  input key: int
+  output throttle: float
+
+  timer sample(0, 100 msec)
+  state position: float = 0
+
+  reaction(key) {=
+    if (key->value == 'w' && self->position < 1) self->position += 0.1f;
+    if (key->value == 's' && self->position > 0) self->position -= 0.1f;
+  =}
+
+  reaction(sample) -> throttle {=
+    lf_set(throttle, self->position);
+  =}
+}
+
+// The cruise control: the throttle that holds the target speed, plus a correction proportional to
+// the error.
+reactor Cruise(set_speed: float = 100) {
+  input speed: float
+  output throttle: float
+
+  reaction(speed) -> throttle {=
+    float power = self->set_speed / 200 + 0.05f * (self->set_speed - speed->value);
+    if (power > 1) power = 1;
+    if (power < 0) power = 0;
+    lf_set(throttle, power);
+  =}
+}
+
+@platform("native")
+@timeout(24 s)
+main reactor {
+  display = new Display()
+  car = new Car()
+  pedal = new Pedal()
+  cruise = new Cruise()
+
+  car.speed -> cruise.speed
+
+  @max_pending_events(5)
+  logical action key: int
+
+  timer show(0, 1 sec)
+  state speed: float = 0
+
+  reaction(startup) -> key {=
+    lf_schedule(key, SEC(1), 'w');
+    lf_schedule(key, SEC(2), 'w');
+    lf_schedule(key, SEC(3), 'w');
+    lf_schedule(key, SEC(8), 'c');
+    lf_schedule(key, SEC(16), 'x');
+  =}
+
+  reaction(key) -> pedal.key {=
+    lf_set(pedal.key, key->value);
+  =}
+
+  reaction(car.speed) {=
+    self->speed = car.speed->value;
+  =}
+
+  reaction(show) -> display.line1 {=
+    static char text[32];
+    snprintf(text, sizeof(text), "%5.1f km/h", self->speed);
+    lf_set(display.line1, text);
+  =}
+
+  initial mode MANUAL {
+    pedal.throttle -> car.throttle
+
+    reaction(key) -> reset(CRUISE), display.line0 {=
+      if (key->value == 'c') {
+        lf_set(display.line0, "CRUISE  the cruise control drives");
+        lf_set_mode(CRUISE);
+      }
+    =}
+  }
+
+  mode CRUISE {
+    cruise.throttle -> car.throttle
+
+    reaction(key) -> reset(MANUAL), display.line0 {=
+      if (key->value == 'x') {
+        lf_set(display.line0, "MANUAL  the pedal drives");
+        lf_set_mode(MANUAL);
+      }
+    =}
+  }
+}

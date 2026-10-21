@@ -1,0 +1,84 @@
+/**
+ * Startup and shutdown reactions inside a mode.
+ *
+ * A pump waters a plant whenever its soil gets too dry: below 30 % of moisture it switches to mode
+ * WATERING, above 40 % back to IDLE. Mode WATERING has three kinds of special reactions:
+ *
+ * - `reaction(startup)` runs the first time the mode becomes active, not when the program starts:
+ *   the pump is filled with water before its first use.
+ * - `reaction(reset)` runs every time the mode is entered with a reset transition: the pump turns
+ *   on. (Mode IDLE turns it off the same way. Its reset reaction does not run when the program
+ *   starts, since the pump is off.)
+ * - `reaction(shutdown)` runs when the program stops, if the mode has ever been active, even if it
+ *   is not active anymore: it reports how much water the pump used.
+ *
+ * Mock: a Soil reactor simulates the moisture sensor, with time sped up.
+ */
+import Display from "lib/Display.ulf"
+
+reactor Soil(start: int = 38) {
+  input watering: bool
+  output moisture: int  // %
+
+  timer tick(0, 1 sec)
+  state level: int = start
+  state wet: bool = false
+
+  reaction(tick) -> moisture {=
+    self->level += self->wet ? 3 : -2;
+    lf_set(moisture, self->level);
+  =}
+
+  reaction(watering) {=
+    self->wet = watering->value;
+  =}
+}
+
+@platform("native")
+@timeout(32 s)
+main reactor {
+  soil = new Soil()
+  display = new Display()
+
+  // Water used by the pump.
+  state liters: float = 0  
+
+  reaction(soil.moisture) -> display.line1 {=
+    static char text[32];
+    snprintf(text, sizeof(text), "soil at %d %%", soil.moisture->value);
+    lf_set(display.line1, text);
+  =}
+
+  initial mode IDLE {
+    reaction(reset) -> soil.watering, display.line0 {=
+      lf_set(soil.watering, false);
+      lf_set(display.line0, "IDLE      pump off");
+    =}
+
+    reaction(soil.moisture) -> reset(WATERING) {=
+      if (soil.moisture->value < 30) lf_set_mode(WATERING);
+    =}
+  }
+
+  mode WATERING {
+    reaction(startup) -> display.line1 {=
+      lf_set(display.line1, "(first time entering the WATERING mode, filling the pump)");
+    =}
+
+    reaction(reset) -> soil.watering, display.line0 {=
+      lf_set(soil.watering, true);
+      lf_set(display.line0, "WATERING  pump on");
+    =}
+
+    reaction(soil.moisture) -> reset(IDLE) {=
+      self->liters += 0.5f;  // Half a liter per second.
+      if (soil.moisture->value > 40) lf_set_mode(IDLE);
+    =}
+
+    reaction(shutdown) -> display.line0 {=
+      static char text[48];
+      snprintf(text, sizeof(text), "the pump used %.1f liters of water", self->liters);
+      lf_set(display.line0, text);
+    =}
+  }
+}

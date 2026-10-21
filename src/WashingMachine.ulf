@@ -1,0 +1,109 @@
+/**
+ * Modes inside modes.
+ *
+ * A washing machine runs a program of three phases: FILL, WASH and SPIN. The program is a modal
+ * reactor of its own, Program, and it lives inside mode RUNNING of the machine. Opening the door
+ * pauses the machine.
+ *
+ * - Start enters RUNNING with a reset transition: the Program starts over from its initial mode,
+ *   FILL, and the reset reactions of FILL run.
+ * - Opening the door leaves RUNNING for PAUSED: the Program stops where it is. It keeps its mode and
+ *   the time left on the timer of that mode.
+ * - Closing the door enters RUNNING with a history transition: the Program carries on in the same
+ *   phase, for the time that was left.
+ *
+ * Keys: 's' starts, 'o' opens the door and 'c' closes it, at the times scheduled at startup.
+ */
+import Display from "lib/Display.ulf"
+
+reactor Program {
+  output phase: {= const char* =}
+  output done: bool
+
+  initial mode FILL {
+    timer filled(2 sec)
+
+    reaction(reset) -> phase {=
+      lf_set(phase, "FILL  water flows in for 2 s");
+    =}
+
+    reaction(filled) -> reset(WASH) {=
+      lf_set_mode(WASH);
+    =}
+  }
+
+  mode WASH {
+    timer washed(4 sec)
+
+    reaction(reset) -> phase {=
+      lf_set(phase, "WASH  the drum turns slowly for 4 s");
+    =}
+
+    reaction(washed) -> reset(SPIN) {=
+      lf_set_mode(SPIN);
+    =}
+  }
+
+  mode SPIN {
+    timer spun(3 sec)
+
+    reaction(reset) -> phase {=
+      lf_set(phase, "SPIN  the drum turns fast for 3 s");
+    =}
+
+    reaction(spun) -> done {=
+      lf_set(done, true);
+    =}
+  }
+}
+
+@platform("native")
+@timeout(19 s)
+main reactor {
+  display = new Display()
+
+  @max_pending_events(4)
+  logical action key: int
+
+  reaction(startup) -> key {=
+    lf_schedule(key, SEC(1), 's');
+    lf_schedule(key, SEC(5), 'o');
+    lf_schedule(key, SEC(8), 'c');
+    lf_schedule(key, SEC(15), 's');
+  =}
+
+  initial mode IDLE {
+    reaction(key) -> reset(RUNNING), display.line0 {=
+      if (key->value == 's') {
+        lf_set(display.line0, "RUNNING   start");
+        lf_set_mode(RUNNING);
+      }
+    =}
+  }
+
+  mode RUNNING {
+    program = new Program()
+    program.phase -> display.line1
+
+    reaction(key) -> reset(PAUSED), display.line0 {=
+      if (key->value == 'o') {
+        lf_set(display.line0, "PAUSED    door open");
+        lf_set_mode(PAUSED);
+      }
+    =}
+
+    reaction(program.done) -> reset(IDLE), display.line0 {=
+      lf_set(display.line0, "IDLE      the laundry is clean");
+      lf_set_mode(IDLE);
+    =}
+  }
+
+  mode PAUSED {
+    reaction(key) -> history(RUNNING), display.line0 {=
+      if (key->value == 'c') {
+        lf_set(display.line0, "RUNNING   door closed, carry on");
+        lf_set_mode(RUNNING);
+      }
+    =}
+  }
+}
