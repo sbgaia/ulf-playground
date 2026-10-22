@@ -17,18 +17,15 @@ by its logical time.
 ```bash
 git clone --recurse-submodules <this repository>
 cd ulf-playground
+export REACTOR_UC_PATH=./reactor-uc
 ```
 
-Then build and run one example, here `InterruptModal`:
+Then build and run one example, given by its path in `src/` without `.ulf`:
 
 ```bash
-cmake -B build/InterruptModal -DLF_MAIN=InterruptModal
-cmake --build build/InterruptModal
-./build/InterruptModal/InterruptModal
+make run EXAMPLE=tutorial/InterruptModal
+make run EXAMPLE=robot/RobotSquare
 ```
-
-The first build also builds the micro-LF compiler, which takes a few minutes. To build with
-another checkout of reactor-uc, set `REACTOR_UC_PATH` to it.
 
 ## Examples
 
