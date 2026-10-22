@@ -1,0 +1,92 @@
+/**
+ * Port of the "Hill Climbing" exercise of the Hill Climb lab (HillClimbSolution.lf).
+ *
+ * The robot starts on the slope of the ramp, facing somewhat sideways. It turns 
+ * towards the top and climbs. When it reaches the flat plateau on top, it turns 
+ * around by 180 degrees and drives back down until its line sensors see the dark 
+ * edge at the bottom of the ramp, where it stops.
+ *
+ * To head straight up (or down) the hill, the robot keeps the roll measured by 
+ * its accelerometer close to zero: it speeds up one wheel and slows down the 
+ * other proportionally to the roll.
+ */
+import Display from "lib/Display.ulf"
+import RobotSim from "lib/RobotSim.ulf"
+
+@platform("native")
+@timeout(20 s)
+main reactor {
+  robot = new RobotSim(world = {= WORLD_RAMP =}, x = 0.2, y = -0.1, heading = 60)
+  display = new Display()
+
+  state angle: float = 0
+  state start: float = 0
+
+  reaction(robot.angle) {=
+    self->angle = robot.angle->value;
+  =}
+
+  initial mode INIT {
+    timer go(1 sec)
+    reaction(go) -> reset(CLIMBING) {=
+      lf_set_mode(CLIMBING);
+    =}
+  }
+
+  mode CLIMBING {
+    reaction(reset) -> display.line0 {=
+      lf_set(display.line0, "CLIMBING");
+    =}
+
+    reaction(robot.pitch, robot.roll) -> robot.left_power, robot.right_power, reset(TURNING_AROUND) {=
+      if (robot.pitch->value < 2.0f) {
+        lf_set_mode(TURNING_AROUND);  // (plateau).
+      } else {
+        // Roll > 0, the robot is leaning towards one side, so speed up the other wheel
+        float correction = 0.005f * robot.roll->value;
+        lf_set(robot.left_power, 0.2f + correction);
+        lf_set(robot.right_power, 0.2f - correction);
+      }
+    =}
+  }
+
+  mode TURNING_AROUND {
+    reaction(reset) -> robot.left_power, robot.right_power, display.line0 {=
+      self->start = self->angle;
+      lf_set(robot.left_power, -0.05f);
+      lf_set(robot.right_power, 0.05f);
+      lf_set(display.line0, "TURNING AROUND");
+    =}
+
+    reaction(robot.angle) -> reset(DESCENDING) {=
+      if (self->angle - self->start >= 180.0f) lf_set_mode(DESCENDING);
+    =}
+  }
+
+  mode DESCENDING {
+    reaction(reset) -> display.line0 {=
+      lf_set(display.line0, "DESCENDING");
+    =}
+
+    reaction(robot.roll) -> robot.left_power, robot.right_power {=
+      float correction = -0.005f * robot.roll->value;
+      lf_set(robot.left_power, 0.2f + correction);
+      lf_set(robot.right_power, 0.2f - correction);
+    =}
+
+    reaction(robot.line_left, robot.line_center, robot.line_right) -> reset(STOPPED) {=
+      if (robot.line_left->value || robot.line_center->value || robot.line_right->value) {
+        lf_set_mode(STOPPED); // Black mark at the bottom of the ramp.
+      }
+    =}
+  }
+
+  mode STOPPED {
+    reaction(reset) -> robot.left_power, robot.right_power, display.line0 {=
+      lf_set(robot.left_power, 0.0f);
+      lf_set(robot.right_power, 0.0f);
+      lf_set(display.line0, "STOPPED at the bottom");
+      env->request_shutdown(env, 0);
+    =}
+  }
+}
