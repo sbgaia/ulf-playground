@@ -1,0 +1,84 @@
+/**
+ * Reactor simulating the behavior of the Pololu 3pi+ robot used in the 
+ * embedded-lab exercises.
+ *
+ * Sensor readings are simulated with Gaussian noise, and the robot is assumed 
+ * to be a rigid body. The Motors, Encoders, GyroAngle, Accelerometer and Line 
+ * sensor reactors of the lab are replaced with a simplified simulation of a 
+ * differential-drive robot (robot_sim.h). The robot advances every `period` 
+ * according to the last motor powers it received, and reports what the sensors 
+ * would measure.
+ * The robot lives in one of three worlds, chosen with the `world` parameter:
+ *
+ * - WORLD_FLAT:  An endless floor. No black lines, no slope. The robot can 
+ *                drive anywhere.
+ * - WORLD_RAMP:  The hill of the Hill Climb lab, seen from above (x points uphill):
+ *
+ *                y = +0.3 +-----------+--------------------------+-----------+
+ *                         |  bottom   |  slope (15 deg, uphill)  |  plateau  |
+ *                y = -0.3 +-----------+--------------------------+-----------+
+ *                      x = -0.3       0                         1.0         1.4
+ *
+ *                A dark band 4 cm wide runs around its border. 
+ *                The program ends when the robot falls off the ramp.
+ * - WORLD_TRACK: A white floor with a dark oval track. Its bottom straight runs 
+ *                along the x axis from x = 0 to x = 1, and its two ends are half 
+ *                circles of radius 0.4 m.
+ */
+preamble {=
+  #include "robot_sim.h"
+=}
+
+reactor RobotSim(
+    world: {= world_t =} = {= WORLD_FLAT =},
+    x: float = 0,        
+    y: float = 0,
+    heading: float = 0,  
+    noise: float = 1,    
+    seed: int = 1,       
+    period: time = 20 msec) {
+  input left_power: float
+  input right_power: float
+
+  output distance: float
+  output angle: float
+  output pitch: float
+  output roll: float
+  output line_left: bool
+  output line_center: bool
+  output line_right: bool
+
+  timer tick(0, period)
+  state robot: robot_t
+  state ticks: int = 0
+
+  reaction(startup) {=
+    robot_init(&self->robot, self->world, self->x, self->y, self->heading, self->noise, self->seed);
+  =}
+
+  reaction(tick) -> distance, angle, pitch, roll, line_left, line_center, line_right {=
+    robot_move(&self->robot, self->period / 1e9);
+
+    lf_set(distance, robot_distance(&self->robot));
+    lf_set(angle, robot_angle(&self->robot));
+    lf_set(pitch, robot_pitch(&self->robot));
+    lf_set(roll, robot_roll(&self->robot));
+    lf_set(line_left, robot_line(&self->robot, SENSOR_LEFT));
+    lf_set(line_center, robot_line(&self->robot, SENSOR_CENTER));
+    lf_set(line_right, robot_line(&self->robot, SENSOR_RIGHT));
+
+    // Report the robot position every second.
+    if (self->ticks++ % (int)(SEC(1) / self->period) == 0) {
+      robot_print(&self->robot, env->get_elapsed_logical_time(env));
+    }
+    if (self->world == WORLD_RAMP && !robot_on_ramp(&self->robot)) {
+      printf("The robot fell off the ramp!\n");
+      env->request_shutdown(env, 0);
+    }
+  =}
+
+  reaction(left_power, right_power) {=
+    if (lf_is_present(left_power)) self->robot.left = left_power->value;
+    if (lf_is_present(right_power)) self->robot.right = right_power->value;
+  =}
+}
