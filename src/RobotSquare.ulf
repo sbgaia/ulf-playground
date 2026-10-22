@@ -1,0 +1,57 @@
+/**
+ * Port of the "Navigation with a Gyroscope" exercise of the Robot lab 
+ * (RobotSquareSolution.lf).
+ *
+ * The robot drives half a meter, turns 90 degrees, and repeats, moving in a square.
+ */
+import Display from "lib/Display.ulf"
+import RobotSim from "lib/RobotSim.ulf"
+
+@platform("native")
+@timeout(15 s)
+main reactor {
+  robot = new RobotSim()
+  display = new Display()
+
+  state distance: float = 0
+  state angle: float = 0
+  state start: float = 0
+
+  reaction(robot.distance, robot.angle) {=
+    self->distance = robot.distance->value;
+    self->angle = robot.angle->value;
+  =}
+
+  initial mode INIT {
+    timer go(1 sec)
+    reaction(go) -> reset(DRIVING) {=
+      lf_set_mode(DRIVING);
+    =}
+  }
+
+  mode DRIVING {
+    reaction(reset) -> robot.left_power, robot.right_power, display.line0 {=
+      self->start = self->distance;
+      lf_set(robot.left_power, 0.2f);
+      lf_set(robot.right_power, 0.2f);
+      lf_set(display.line0, "DRIVING");
+    =}
+
+    reaction(robot.distance) -> reset(TURNING) {=
+      if (self->distance - self->start >= 0.5f) lf_set_mode(TURNING);
+    =}
+  }
+
+  mode TURNING {
+    reaction(reset) -> robot.left_power, robot.right_power, display.line0 {=
+      self->start = self->angle;
+      lf_set(robot.left_power, -0.05f);
+      lf_set(robot.right_power, 0.05f);
+      lf_set(display.line0, "TURNING");
+    =}
+
+    reaction(robot.angle) -> reset(DRIVING) {=
+      if (self->angle - self->start >= 90.0f) lf_set_mode(DRIVING);
+    =}
+  }
+}
