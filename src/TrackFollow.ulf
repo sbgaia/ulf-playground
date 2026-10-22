@@ -1,0 +1,50 @@
+/**
+ * Port of the "Track Following" exercise of the Track and Line Following lab
+ * (TrackFollowSolution.lf).
+ *
+ * The robot follows a dark line on the floor by zig-zagging along it.
+ * In mode LEFT it steers left until the line appears under its right line sensor.
+ * In mode RIGHT it steers right until the line appears under its left line sensor. 
+ * Both turns are tighter than the curves of the track, so the robot never loses 
+ * the line. The display shows where the robot is steering.
+ */
+import Display from "lib/Display.ulf"
+import RobotSim from "lib/RobotSim.ulf"
+
+@platform("native")
+@timeout(40 s)
+main reactor {
+  robot = new RobotSim(world = {= WORLD_TRACK =}, x = 0.2)
+  display = new Display()
+
+  initial mode INIT {
+    timer go(1 sec)
+    reaction(go) -> reset(LEFT) {=
+      lf_set_mode(LEFT);
+    =}
+  }
+
+  mode LEFT {
+    reaction(reset) -> robot.left_power, robot.right_power, display.line0 {=
+      lf_set(robot.left_power, 0.10f);
+      lf_set(robot.right_power, 0.15f);
+      lf_set(display.line0, "left");
+    =}
+
+    reaction(robot.line_right) -> reset(RIGHT) {=
+      if (robot.line_right->value) lf_set_mode(RIGHT);
+    =}
+  }
+
+  mode RIGHT {
+    reaction(reset) -> robot.left_power, robot.right_power, display.line0 {=
+      lf_set(robot.left_power, 0.15f);
+      lf_set(robot.right_power, 0.10f);
+      lf_set(display.line0, "right");
+    =}
+
+    reaction(robot.line_left) -> reset(LEFT) {=
+      if (robot.line_left->value) lf_set_mode(LEFT);
+    =}
+  }
+}
