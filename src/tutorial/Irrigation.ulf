@@ -14,7 +14,7 @@
  *
  * Mock: a Soil reactor simulates the moisture sensor, with time sped up.
  */
-import Display from "lib/Display.ulf"
+import Display from "../lib/Display.ulf"
 
 reactor Soil(start: int = 38) {
   input watering: bool

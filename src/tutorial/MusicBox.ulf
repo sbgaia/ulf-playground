@@ -10,7 +10,7 @@
  *
  * Keys: 'p', 'c' and 'r' are pressed at the times scheduled at startup.
  */
-import Display from "lib/Display.ulf"
+import Display from "../lib/Display.ulf"
 
 reactor Melody {
   output note: {= const char* =}

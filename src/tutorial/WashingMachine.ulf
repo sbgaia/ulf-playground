@@ -14,7 +14,7 @@
  *
  * Keys: 's' starts, 'o' opens the door and 'c' closes it, at the times scheduled at startup.
  */
-import Display from "lib/Display.ulf"
+import Display from "../lib/Display.ulf"
 
 reactor Program {
   output phase: {= const char* =}

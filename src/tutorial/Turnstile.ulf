@@ -5,7 +5,7 @@
  *
  * Keys: 'c' inserts a coin and 'p' pushes, at the times scheduled at startup.
  */
-import Display from "lib/Display.ulf"
+import Display from "../lib/Display.ulf"
 
 @platform("native")
 @timeout(8 s)

@@ -5,8 +5,8 @@
  * Every two seconds the robot toggles between a STOPPED and a DRIVING mode. 
  * It drives forward while DRIVING and stands still while STOPPED.
  */
-import Display from "lib/Display.ulf"
-import RobotSim from "lib/RobotSim.ulf"
+import Display from "../lib/Display.ulf"
+import RobotSim from "../lib/RobotSim.ulf"
 
 @platform("native")
 @timeout(10 s)

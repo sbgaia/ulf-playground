@@ -9,7 +9,7 @@
  * Keys: 'w' pushes the pedal further down, 'c' switches the cruise control on and 'x' off, at the
  * times scheduled at startup.
  */
-import Display from "lib/Display.ulf"
+import Display from "../lib/Display.ulf"
 
 // The car: its engine pushes and the air slows it down. At a constant throttle, its speed settles
 // at 200 km/h times the throttle.

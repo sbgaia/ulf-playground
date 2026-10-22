@@ -4,8 +4,8 @@
  *
  * The robot drives half a meter, turns 90 degrees, and repeats, moving in a square.
  */
-import Display from "lib/Display.ulf"
-import RobotSim from "lib/RobotSim.ulf"
+import Display from "../lib/Display.ulf"
+import RobotSim from "../lib/RobotSim.ulf"
 
 @platform("native")
 @timeout(15 s)

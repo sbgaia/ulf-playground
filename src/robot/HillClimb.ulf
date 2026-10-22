@@ -10,8 +10,8 @@
  * its accelerometer close to zero: it speeds up one wheel and slows down the 
  * other proportionally to the roll.
  */
-import Display from "lib/Display.ulf"
-import RobotSim from "lib/RobotSim.ulf"
+import Display from "../lib/Display.ulf"
+import RobotSim from "../lib/RobotSim.ulf"
 
 @platform("native")
 @timeout(20 s)

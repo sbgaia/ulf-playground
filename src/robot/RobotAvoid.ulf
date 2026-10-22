@@ -5,8 +5,8 @@
  * hits an obstacle, it backs off, turns away from the obstacle, and then carries 
  * on with a new side of the square.
  */
-import Display from "lib/Display.ulf"
-import RobotSim from "lib/RobotSim.ulf"
+import Display from "../lib/Display.ulf"
+import RobotSim from "../lib/RobotSim.ulf"
 
 @platform("native")
 @timeout(14 s)

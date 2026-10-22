@@ -7,8 +7,8 @@
  * an edge on the right makes it turn left, and an edge straight ahead makes it 
  * turn around.
  */
-import Display from "lib/Display.ulf"
-import RobotSim from "lib/RobotSim.ulf"
+import Display from "../lib/Display.ulf"
+import RobotSim from "../lib/RobotSim.ulf"
 
 @platform("native")
 @timeout(30 s)

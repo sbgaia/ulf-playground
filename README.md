@@ -5,9 +5,11 @@ Small **modal reactors** for [micro-LF](https://micro-lf.org)
 Modal modes are implemented by the micromode runtime extension of reactor-uc.
 They run on Linux or macOS.
 
-Each example is one file in [src/](src). There is no keyboard: the buttons each example presses
-are scheduled in its `reaction(startup)`, and `@timeout` stops the program. Change them to try
-other cases. [src/lib/Display.ulf](src/lib/Display.ulf) prints every line it receives, prefixed
+Each example is one file: the tutorial examples are in [src/tutorial/](src/tutorial), the robot
+examples in [src/robot/](src/robot). There is no keyboard: the buttons each example 
+presses are scheduled in its `reaction(startup)`, and `@timeout` stops the program. 
+Change them to try other cases. 
+[src/lib/Display.ulf](src/lib/Display.ulf) prints every line it receives, prefixed 
 by its logical time.
 
 ## Build and run
@@ -34,15 +36,15 @@ Each example shows one feature of modes. Read them in this order:
 
 | Example | What it shows |
 | --- | --- |
-| [Turnstile](src/Turnstile.ulf) | modes, transitions, one mode active at a time |
-| [InterruptModal](src/InterruptModal.ulf) | a timer in each mode (Interrupts lab 6.4) |
-| [TrafficLight](src/TrafficLight.ulf) | timers inside modes restart when the mode is entered |
-| [Thermostat](src/Thermostat.ulf) | hysteresis, from Lee & Seshia |
-| [Toaster](src/Toaster.ulf) | pending actions of a mode that is left |
-| [MusicBox](src/MusicBox.ulf) | `reset` versus `history` transitions |
-| [WashingMachine](src/WashingMachine.ulf) | modes inside modes |
-| [CruiseControl](src/CruiseControl.ulf) | connections that change with the mode |
-| [Irrigation](src/Irrigation.ulf) | `startup` and `shutdown` reactions in a mode |
+| [Turnstile](src/tutorial/Turnstile.ulf) | modes, transitions, one mode active at a time |
+| [InterruptModal](src/tutorial/InterruptModal.ulf) | a timer in each mode (Interrupts lab 6.4) |
+| [TrafficLight](src/tutorial/TrafficLight.ulf) | timers inside modes restart when the mode is entered |
+| [Thermostat](src/tutorial/Thermostat.ulf) | hysteresis, from Lee & Seshia |
+| [Toaster](src/tutorial/Toaster.ulf) | pending actions of a mode that is left |
+| [MusicBox](src/tutorial/MusicBox.ulf) | `reset` versus `history` transitions |
+| [WashingMachine](src/tutorial/WashingMachine.ulf) | modes inside modes |
+| [CruiseControl](src/tutorial/CruiseControl.ulf) | connections that change with the mode |
+| [Irrigation](src/tutorial/Irrigation.ulf) | `startup` and `shutdown` reactions in a mode |
 
 In addition, there are some examples of modal reactors that control a simulated robot. 
 They are the modal exercises of the [embedded-lab](https://github.com/lf-lang/embedded-lab) 
@@ -53,12 +55,12 @@ change `seed` for another run:
 
 | Example | What it shows |
 | --- | --- |
-| [RobotDrive](src/RobotDrive.ulf) | toggle between driving and stopped (Robot lab 7.2) |
-| [RobotSquare](src/RobotSquare.ulf) | drive in a square with encoders and gyroscope (Robot lab 7.4) |
-| [RobotAvoid](src/RobotAvoid.ulf) | the square, backing off from obstacles (Robot lab 7.5) |
-| [HillLineAvoid](src/HillLineAvoid.ulf) | avoid the dark edges of a ramp (Hill Climb lab 8.2) |
-| [HillClimb](src/HillClimb.ulf) | climb, turn around, drive down (Hill Climb lab 8.3) |
-| [TrackFollow](src/TrackFollow.ulf) | follow a line (Track and Line Following lab 9.2) |
+| [RobotDrive](src/robot/RobotDrive.ulf) | toggle between driving and stopped (Robot lab 7.2) |
+| [RobotSquare](src/robot/RobotSquare.ulf) | drive in a square with encoders and gyroscope (Robot lab 7.4) |
+| [RobotAvoid](src/robot/RobotAvoid.ulf) | the square, backing off from obstacles (Robot lab 7.5) |
+| [HillLineAvoid](src/robot/HillLineAvoid.ulf) | avoid the dark edges of a ramp (Hill Climb lab 8.2) |
+| [HillClimb](src/robot/HillClimb.ulf) | climb, turn around, drive down (Hill Climb lab 8.3) |
+| [TrackFollow](src/robot/TrackFollow.ulf) | follow a line (Track and Line Following lab 9.2) |
 
 ## Notes
 

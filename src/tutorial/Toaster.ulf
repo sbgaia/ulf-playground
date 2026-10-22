@@ -11,7 +11,7 @@
  *
  * Keys: 'd' pushes the lever down and 'c' cancels, at the times scheduled at startup.
  */
-import Display from "lib/Display.ulf"
+import Display from "../lib/Display.ulf"
 
 @platform("native")
 @timeout(16 s)

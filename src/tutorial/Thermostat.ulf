@@ -8,7 +8,7 @@
  *
  * Mock: a Room reactor simulates the temperature sensor.
  */
-import Display from "lib/Display.ulf"
+import Display from "../lib/Display.ulf"
 
 reactor Room(start: float = 20) {
   input heater: bool

@@ -9,7 +9,7 @@
  *
  * Keys: the pedestrian button ('p') is pushed at the times scheduled at startup.
  */
-import Display from "lib/Display.ulf"
+import Display from "../lib/Display.ulf"
 
 @platform("native")
 @timeout(20 s)

@@ -8,8 +8,8 @@
  * Both turns are tighter than the curves of the track, so the robot never loses 
  * the line. The display shows where the robot is steering.
  */
-import Display from "lib/Display.ulf"
-import RobotSim from "lib/RobotSim.ulf"
+import Display from "../lib/Display.ulf"
+import RobotSim from "../lib/RobotSim.ulf"
 
 @platform("native")
 @timeout(40 s)
