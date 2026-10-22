@@ -1,0 +1,85 @@
+/**
+ * Port of the "Line Sensing" exercise of the Hill Climb lab (HillLineAvoidSolution.lf).
+ *
+ * The robot drives forward on the ramp. When its line sensors see the dark edge 
+ * of the ramp, it backs up, turns away from the edge, and drives forward again.
+ * Where the edge was seen decides the turn: an edge on the left makes it turn right,
+ * an edge on the right makes it turn left, and an edge straight ahead makes it 
+ * turn around.
+ */
+import Display from "lib/Display.ulf"
+import RobotSim from "lib/RobotSim.ulf"
+
+@platform("native")
+@timeout(30 s)
+main reactor {
+  robot = new RobotSim(world = {= WORLD_RAMP =}, x = 0.5, heading = 30)
+  display = new Display()
+
+  state angle: float = 0
+  state start: float = 0
+  state turn: float = 0
+
+  reaction(robot.angle) {=
+    self->angle = robot.angle->value;
+  =}
+
+  initial mode INIT {
+    timer go(1 sec)
+    reaction(go) -> reset(FORWARD) {=
+      lf_set_mode(FORWARD);
+    =}
+  }
+
+  mode FORWARD {
+    reaction(reset) -> robot.left_power, robot.right_power, display.line0 {=
+      lf_set(robot.left_power, 0.2f);
+      lf_set(robot.right_power, 0.2f);
+      lf_set(display.line0, "FORWARD");
+    =}
+
+    reaction(robot.line_left, robot.line_center, robot.line_right) -> reset(BACKING), display.line1 {=
+      if (robot.line_left->value) {
+        self->turn = -60.0f;
+        lf_set(display.line1, "edge on the Left");
+      } else if (robot.line_right->value) {
+        self->turn = 60.0f;
+        lf_set(display.line1, "edge on the Right");
+      } else if (robot.line_center->value) {
+        self->turn = 150.0f;
+        lf_set(display.line1, "edge in the Center");
+      } else {
+        return;
+      }
+      lf_set_mode(BACKING);
+    =}
+  }
+
+  mode BACKING {
+    timer backed_off(400 msec)
+
+    reaction(reset) -> robot.left_power, robot.right_power, display.line0 {=
+      lf_set(robot.left_power, -0.1f);
+      lf_set(robot.right_power, -0.1f);
+      lf_set(display.line0, "BACKING");
+    =}
+
+    reaction(backed_off) -> reset(TURNING) {=
+      lf_set_mode(TURNING);
+    =}
+  }
+
+  mode TURNING {
+    reaction(reset) -> robot.left_power, robot.right_power, display.line0 {=
+      self->start = self->angle;
+      float spin = self->turn > 0 ? 0.05f : -0.05f;
+      lf_set(robot.left_power, -spin);
+      lf_set(robot.right_power, spin);
+      lf_set(display.line0, "TURNING");
+    =}
+
+    reaction(robot.angle) -> reset(FORWARD) {=
+      if (fabsf(self->angle - self->start) >= fabsf(self->turn)) lf_set_mode(FORWARD);
+    =}
+  }
+}
