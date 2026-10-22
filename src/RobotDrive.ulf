@@ -1,0 +1,62 @@
+/**
+ * Port of RobotTemplate.lf and of the "Motors" exercise of the Robot lab 
+ * (RobotDriveSolution.lf).
+ *
+ * Every two seconds the robot toggles between a STOPPED and a DRIVING mode. 
+ * It drives forward while DRIVING and stands still while STOPPED.
+ */
+import Display from "lib/Display.ulf"
+import RobotSim from "lib/RobotSim.ulf"
+
+@platform("native")
+@timeout(10 s)
+main reactor {
+  timer t(0, 2 sec)
+  state drive: bool = false
+  robot = new Robot()
+  motors = new RobotSim()
+  display = new Display()
+  robot.notify -> display.line0
+  robot.left_power -> motors.left_power
+  robot.right_power -> motors.right_power
+
+  reaction(t) -> robot.drive {=
+    lf_set(robot.drive, self->drive);
+    self->drive = !self->drive;
+  =}
+}
+
+reactor Robot {
+  input drive: bool
+  output notify: {= const char* =}  
+  output left_power: float
+  output right_power: float
+
+  reaction(startup) -> notify {=
+    lf_set(notify, "INIT");
+  =}
+
+  initial mode STOPPED {
+    reaction(reset) -> notify, left_power, right_power {=
+      lf_set(notify, "STOPPED");
+      lf_set(left_power, 0.0f);
+      lf_set(right_power, 0.0f);
+    =}
+
+    reaction(drive) -> reset(DRIVING) {=
+      if (drive->value) lf_set_mode(DRIVING);
+    =}
+  }
+
+  mode DRIVING {
+    reaction(reset) -> notify, left_power, right_power {=
+      lf_set(notify, "DRIVING");
+      lf_set(left_power, 0.1f);
+      lf_set(right_power, 0.1f);
+    =}
+
+    reaction(drive) -> reset(STOPPED) {=
+      if (!drive->value) lf_set_mode(STOPPED);
+    =}
+  }
+}
