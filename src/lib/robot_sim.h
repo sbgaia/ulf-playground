@@ -47,7 +47,7 @@ static inline void robot_init(robot_t* r, world_t world, double x, double y, dou
 }
 
 // A uniform random number in (0, 1) using the SplitMix64 algorithm.
-static inline double splitmix64_next(robot_t* r) {
+static inline double splitmix64_uniform(robot_t* r) {
   uint64_t z = (r->rng += 0x9E3779B97F4A7C15ull);
   z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
   z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
@@ -58,7 +58,7 @@ static inline double splitmix64_next(robot_t* r) {
 // Gaussian noise with the given standard deviation, scaled by the noise of the 
 // robot (Box-Muller transform).
 static inline double sensor_noise(robot_t* r, double stddev) {
-  double u1 = splitmix64_next(r), u2 = splitmix64_next(r);
+  double u1 = splitmix64_uniform(r), u2 = splitmix64_uniform(r);
   return r->noise * stddev * sqrt(-2 * log(u1)) * cos(2 * PI * u2);
 }
 
