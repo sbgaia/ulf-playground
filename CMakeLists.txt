@@ -28,4 +28,7 @@ target_compile_definitions(
   reactor-uc PUBLIC LF_RUNTIME_EXTENSIONS=1
                     LF_EXTENSION_CONFIG_HEADER="${GEN_DIR}/lf_extensions.h")
 add_subdirectory(${GEN_DIR}/micromode ${CMAKE_BINARY_DIR}/micromode)
-target_link_libraries(${LF_MAIN} PRIVATE micromode::micromode)
+target_link_libraries(${LF_MAIN} PRIVATE micromode::micromode m)
+
+# The C headers of the mocks.
+target_include_directories(${LF_MAIN} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/lib)
